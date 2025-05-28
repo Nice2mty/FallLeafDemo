@@ -1,0 +1,35 @@
+#pragma kernel CSMain
+
+struct TouchPoint
+{
+    float2 uv;
+    float2 vec;
+};
+
+StructuredBuffer<TouchPoint> Points;
+int PointCounts;
+RWTexture2D<float4> Result;
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float4 p = float4(0,0,0,1);
+    TouchPoint tp;
+    float range = 0.035;
+    float dis;
+    float2 v;
+    float2 uv = id.xy / float2(512,512);
+    for (int i = 0; i < PointCounts; i++ )
+    {
+        tp = Points[i];
+        dis = distance(tp.uv,uv);
+        if( dis < range )
+        {
+            p.y = 1 - dis / range;
+            v = normalize( uv - tp.uv ) * p.y;
+            p.x += v.x + tp.vec.x;
+            p.z += v.y + tp.vec.y;
+        }
+    }
+    Result[id.xy] = p;
+}
